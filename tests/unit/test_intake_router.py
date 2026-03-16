@@ -29,10 +29,18 @@ def test_route_intake_topic_only(sut, new_ulid):
 
 
 def test_route_intake_deepen_topic(sut, new_ulid):
-    existing_topic_id = new_ulid()
-    decision = sut.route_intake(
+    seed = sut.route_intake(
         {
             "user_id": new_ulid(),
+            "session_id": new_ulid(),
+            "topic_title": "Seed topic",
+            "entry_mode": "topic_only",
+        }
+    )
+    existing_topic_id = seed["topic_id"]
+    decision = sut.route_intake(
+        {
+            "user_id": seed["user_id"],
             "session_id": new_ulid(),
             "topic_id": existing_topic_id,
             "entry_mode": "deepen_topic",
@@ -43,3 +51,18 @@ def test_route_intake_deepen_topic(sut, new_ulid):
     assert route in ALLOWED_ROUTES
     assert route == "deepen_topic"
     assert decision["topic_id"] == existing_topic_id
+
+
+def test_route_intake_deepen_unknown_topic_rejected(sut, new_ulid):
+    payload = {
+        "user_id": new_ulid(),
+        "session_id": new_ulid(),
+        "topic_id": new_ulid(),
+        "entry_mode": "deepen_topic",
+        "intent": "deepen_topic",
+    }
+    try:
+        sut.route_intake(payload)
+    except Exception:
+        return
+    raise AssertionError("Unknown topic_id in deepen_topic flow should be rejected.")
